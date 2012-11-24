@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">IrkRuSMSer</string>
-    <string name="lblPhoneNumber">Номер телефона:</string>
+    <string name="app_name">irk.ru SMSer</string>
+    <string name="PhoneNumber">Номер телефона:</string>
     <string name="menu_settings">Settings</string>
-    <string name="editPhoneNumber"/>
+    <string name="MessageText">Текст сообщения:</string>
+    <color name="BackColor">#66c4f0</color>
+    <color name="textColor">#000000</color>
 
 </resources>

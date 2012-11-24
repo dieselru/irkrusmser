@@ -1,0 +1,112 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/BackColor"
+    tools:context=".MainActivity" >
+    
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:text="@string/PhoneNumber"
+        android:textColor="@color/textColor"
+        android:textSize="15sp" />
+    
+    <EditText
+        android:id="@+id/editPhoneNumber"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/textView1"
+        android:layout_toLeftOf="@+id/btnFContacts"
+        android:ems="10"
+        android:inputType="phone" />
+    
+        <requestFocus />      
+        
+    <Button
+        android:id="@+id/btnFContacts"
+        android:layout_width="43dp"
+        android:layout_height="43dp"
+        android:layout_below="@+id/textView1"
+        android:layout_toLeftOf="@+id/btnContacts"
+        android:background="@drawable/fcontactnormal" />
+
+    <Button
+        android:id="@+id/btnContacts"
+        android:layout_width="43dp"
+        android:layout_height="43dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/btnFContacts"
+        android:background="@drawable/contactsnormal" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/btnContacts"
+        android:layout_marginTop="10dp"
+        android:text="@string/MessageText"
+        android:textColor="@color/textColor"
+        android:textSize="15sp" />
+
+    <EditText
+        android:id="@+id/editMessage"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/textView2"
+        android:ems="10"
+        android:inputType="textMultiLine" >
+
+        <requestFocus />
+    </EditText>
+
+ 	<Button
+ 	    android:id="@+id/btnSend"
+ 	    android:layout_width="43dp"
+ 	    android:layout_height="43dp"
+ 	    android:layout_alignBaseline="@+id/editCaptcha1"
+ 	    android:layout_alignBottom="@+id/editCaptcha1"
+ 	    android:layout_toRightOf="@+id/btnFContacts"
+ 	    android:background="@drawable/sendnormal" />
+
+ 	<ImageView
+ 	    android:id="@+id/imageCaptcha1"
+ 	    android:layout_width="150dp"
+ 	    android:layout_height="48dp"
+ 	    android:layout_alignParentLeft="true"
+ 	    android:layout_below="@+id/editMessage"
+ 	    android:scaleType="fitCenter"
+ 	    android:src="@drawable/ic_launcher" />
+
+ 	<EditText
+ 	    android:id="@+id/editCaptcha1"
+ 	    android:layout_width="87dp"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_alignTop="@+id/imageCaptcha1"
+ 	    android:layout_toRightOf="@+id/imageCaptcha1"
+ 	    android:ems="10"
+ 	    android:inputType="number" />
+
+ 	<EditText
+ 	    android:id="@+id/editName"
+ 	    android:layout_width="wrap_content"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_alignParentLeft="true"
+ 	    android:layout_centerVertical="true"
+ 	    android:ems="10" />
+
+ 	<TextView
+ 	    android:id="@+id/textError"
+ 	    android:layout_width="wrap_content"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_alignParentLeft="true"
+ 	    android:layout_below="@+id/editText1"
+ 	    android:text="TextView" />
+
+</RelativeLayout>
