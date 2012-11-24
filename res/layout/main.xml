@@ -106,7 +106,7 @@
  	    android:layout_width="wrap_content"
  	    android:layout_height="wrap_content"
  	    android:layout_alignParentLeft="true"
- 	    android:layout_below="@+id/editText1"
+ 	    android:layout_below="@+id/editName"
  	    android:text="TextView" />
 
 </RelativeLayout>
