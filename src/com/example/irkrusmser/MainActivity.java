@@ -1,11 +1,14 @@
 package com.example.irkrusmser;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.regex.Matcher;
@@ -16,10 +19,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
@@ -36,7 +42,7 @@ public class MainActivity extends Activity {
 	
 	TextView txtPhoneNumber;
 	TextView txtSMSText;
-	TextView txtName;
+	//TextView txtName;
 	TextView txtCaptcha1;
 	TextView txtError;
 	Button buttonSend;
@@ -46,17 +52,18 @@ public class MainActivity extends Activity {
 	
     private String _cookie = "";
     private String strCaptcha0 = "";
+    private String strMyName = "";
     
 	// ќпредел€ем подключены ли к интернету
 	public boolean isOnline() {
 	    ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 	    NetworkInfo nInfo = cm.getActiveNetworkInfo();
 	    if (nInfo != null && nInfo.isConnected()) {
-	        Log.v("status", "ONLINE");
+	        //Log.v("status", "ONLINE");
 	        return true;
 	    }
 	    else {
-	        Log.v("status", "OFFLINE");
+	        //Log.v("status", "OFFLINE");
 	        return false;
 	    }
 	}
@@ -69,13 +76,10 @@ public class MainActivity extends Activity {
         // найдем View-элементы
         txtPhoneNumber = (TextView) findViewById(R.id.editPhoneNumber);
         txtSMSText = (TextView) findViewById(R.id.editMessage);
-        txtName = (TextView) findViewById(R.id.editName);
+        //txtName = (TextView) findViewById(R.id.editName);
         txtCaptcha1 = (TextView) findViewById(R.id.editCaptcha1);
         txtError = (TextView) findViewById(R.id.textError);
-        //buttonSend = (Button) findViewById(R.id.buttonSend);
-        //buttonSelectContact = (Button) findViewById(R.id.buttonContact);
-        //buttonSelectContact = (ImageButton) findViewById(R.id.imgbuttonContact);
-        //buttonReload = (Button) findViewById(R.id.buttonReload);
+
         buttonSend = (Button) findViewById(R.id.btnSend);
         buttonSelectContact = (Button) findViewById(R.id.btnContacts);
         imgCaptcha = (ImageView) findViewById(R.id.imageCaptcha1);
@@ -84,39 +88,59 @@ public class MainActivity extends Activity {
         возвращаем второй аргумент. В данном случае пробел.  */		
  
         SharedPreferences settings = getPreferences(0);
-        String name = settings.getString("Name"," ");
+        strMyName = settings.getString("Name"," ");
  
         /* Вставляем в текстовые поля загруженные параметры */        
-        txtName.setText(name);
+        //txtName.setText(name);
         
         // ѕроверка на подключение к »нтернет
         if (isOnline() == true){
-        	// ѕолучаем ссылку на капчу
-        	goUrl("http://irk.ru/sms");
+        	// Получаем капчу
+        	new DownloadImageTask().execute("http://irk.ru/sms");
         }
         else{
-        	txtError.setText("¬ы не подключены к сети »нтернет.");
+        	txtError.setText("Вы не подключены к сети Интернет.");
         }  
-        // ќбработчик нажати€ на кнопку ртправить
+        // Обработчик нажатия на кнопку ртправить
         buttonSend.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
         		//Toast.makeText(getApplicationContext(), "ѕривет, мир!", Toast.LENGTH_SHORT).show();
         		// ѕо нажатию на кнопку button1 происходит отображение всплываещего сообщени€ "ѕривет, мир!"
+        		if (txtPhoneNumber.length() < 1)
+        		{
+        			Toast.makeText(getApplicationContext(), "Введите номер телефона!", Toast.LENGTH_SHORT).show();
+        			return;
+        		}
+        		
+        		if (txtSMSText.length() < 1)
+        		{
+        			Toast.makeText(getApplicationContext(), "Введите текст СМС!", Toast.LENGTH_SHORT).show();
+        			return;
+        		}
+        		
+        		if (txtCaptcha1.length() < 1)
+        		{
+        			Toast.makeText(getApplicationContext(), "Введите пин-код!", Toast.LENGTH_SHORT).show();
+        			return;
+        		}
+        		
         		if (isOnline() == true){
-	        		String data_s = "csrfmiddlewaretoken=" + GetToken(_cookie) + "&number=" + txtPhoneNumber.getText() + "&message=" + txtSMSText.getText() + "\n" + txtName.getText() + "&captcha_0=" + strCaptcha0 + "&captcha_1=" + txtCaptcha1.getText();
-	        		try 
-	        		{
-	        			txtError.setText(SendPost("http://irk.ru/sms/?", data_s));
-	        		} 
-	        		catch (IOException e) 
-	        		{
-	        			e.printStackTrace();
-	        		}
-	        		// Получаем ссылку на капчу
-	                goUrl("http://irk.ru/sms");
+	        		String data_s = "csrfmiddlewaretoken=" + GetToken(_cookie) + "&number=" + txtPhoneNumber.getText() + "&message=" + txtSMSText.getText() + "\n" + strMyName + "&captcha_0=" + strCaptcha0 + "&captcha_1=" + txtCaptcha1.getText();
+	        		//try 
+	        		//{
+	        			//txtError.setText(SendPost("http://irk.ru/sms/?", data_s));
+	        			new SendSMSTask().execute("http://irk.ru/sms/?", data_s);
+	        			//Log.v("status", "SEND");
+	        		//} 
+	        		//catch (IOException e) 
+	        		//{
+	        		//	e.printStackTrace();
+	        		//}
+	        		// Получаем капчу
+	        		new DownloadImageTask().execute("http://irk.ru/sms");
         		}
         		else{
-        			Toast.makeText(getApplicationContext(), "¬ы не подключены к сети »нтернет.", Toast.LENGTH_SHORT).show();
+        			Toast.makeText(getApplicationContext(), "Вы не подключены к сети Интернет.", Toast.LENGTH_SHORT).show();
         		}
         	}
         });
@@ -127,11 +151,11 @@ public class MainActivity extends Activity {
         		//Toast.makeText(getApplicationContext(), "ѕривет, мир!", Toast.LENGTH_SHORT).show();
         		// ѕо нажатию на кнопку button1 происходит отображение всплываещего сообщени€ "ѕривет, мир!"
         		if (isOnline() == true){
-	        		// Получаем ссылку на капчу
-	                goUrl("http://irk.ru/sms");
+	        		// Получаем капчу
+        			new DownloadImageTask().execute("http://irk.ru/sms");
         		}
         		else{
-        			Toast.makeText(getApplicationContext(), "¬ы не подключены к сети »нтернет.", Toast.LENGTH_SHORT).show();
+        			Toast.makeText(getApplicationContext(), "Вы не подключены к сети Интернет.", Toast.LENGTH_SHORT).show();
         		}
         	}
         });
@@ -139,7 +163,7 @@ public class MainActivity extends Activity {
         // ќбработчик выбора контакта
         buttonSelectContact.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-        		// ¬ыбор только контактов звонков (без почтовых)
+        		// Выбор только контактов звонков (без почтовых)
                 Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
                 pickIntent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
                 startActivityForResult(pickIntent, PICK_RESULT);
@@ -147,24 +171,24 @@ public class MainActivity extends Activity {
         });
     }
   
-    // «акрытие приложения
+    // Закрытие приложения
 	@Override
     protected void onStop(){
        super.onStop();
  
-       String name = txtName.getText().toString().trim();
+       //String name = txtName.getText().toString().trim();
  
-      /* «агружаем редактор настроек и вписываем новые значения */
+      /* Загружаем редактор настроек и вписываем новые значения */
  
       SharedPreferences settings = getPreferences(0);
       SharedPreferences.Editor editor = settings.edit();
-      editor.putString("Name", name);
+      editor.putString("Name", strMyName);
  
-      /* —охраняем данные. Если не выполнить - ничего не сохранится =) */
+      /* Сохраняем данные. Если не выполнить - ничего не сохранится =) */
       editor.commit();
     }
 
-    // ќбработка выбора контакта
+    // Обработка выбора контакта
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (data != null) {
@@ -197,82 +221,96 @@ public class MainActivity extends Activity {
     	txtPhoneNumber.setText(number);      
     }
     
- 	// ѕереходим по ссылке
-    private void goUrl(String strurl)
-    {
-        // Получаем ссылку на капчу
-        strCaptcha0 = GetCaptchaPath(strurl);
-        String url = "http://irk.ru/captcha/image/" + strCaptcha0;
-        txtError.setText(url);
-        // загружаем картинку с указанного адреса в ImageView
-        try 
-        {
-        	imgCaptcha.setImageDrawable(grabImageFromUrl(url));
-        } 
-        catch (Exception e) 
-        {
-        	txtError.setText("Ошибка: Exception");
+// Класс загрузки изображения капчи в отдельном потоке
+    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        /** The system calls this to perform work in a worker thread and
+          * delivers it the parameters given to AsyncTask.execute() 
+          * Как использовать этот класс
+          * public void onClick(View v) {
+	      * 	new DownloadImageTask().execute("http://example.com/image.png");
+	      * }*/
+        protected Bitmap doInBackground(String... urls) {
+            try {
+            	// Получаем изображение капчи в отдельном потоке
+            	strCaptcha0 = GetCaptchaPath(urls[0]);
+				return getImageByUrl("http://irk.ru/captcha/image/" + strCaptcha0);
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return null;
+        }
+        
+        private Bitmap getImageByUrl(String url) throws IOException,
+			MalformedURLException {
+			//Вот так можно получить изображение по url
+			Bitmap image = BitmapFactory.decodeStream((InputStream)new URL(url).getContent());
+			return image;
+		}
+
+        
+    	// Функция получения ссылки на картинку капчи
+    	public String GetCaptchaPath(String urlsite) 
+    	{
+    		String matchtemper = "";
+    		try
+    		{
+    			// загрузка страницы
+    			URL url = new URL(urlsite);
+    			URLConnection conn = url.openConnection();
+
+    			// Save Cookie
+    			String headerName = null;
+    			//_cookies.clear();
+    			if (_cookie == "") {
+    				for (int i=1; (headerName = conn.getHeaderFieldKey(i))!=null; i++) {
+    					if (headerName.equalsIgnoreCase("Set-Cookie")) 
+    					{    
+    						String cookie = conn.getHeaderField(i);
+    						_cookie += cookie.substring(0,cookie.indexOf(";")) + "; ";
+    					}
+    				}
+    			}
+                    
+    			InputStreamReader rd = new InputStreamReader(conn.getInputStream());
+    			StringBuilder allpage = new StringBuilder();
+    			int n = 0;
+    			char[] buffer = new char[40000];
+    			while (n >= 0)
+    			{
+    				n = rd.read(buffer, 0, buffer.length);
+    				if (n > 0)
+    				{
+    					allpage.append(buffer, 0, n);                    
+    				}
+    			}
+    			// работаем с регулярками
+    			final Pattern pattern = Pattern.compile ("/captcha/image/([a-z0-9]+)/");
+    			Matcher matcher = pattern.matcher(allpage.toString());
+    			if (matcher.find())
+    			{    
+    				matchtemper = matcher.group(1);            
+    			}        
+    			return matchtemper;
+    		}
+    		catch (Exception e)
+    		{
+                    
+    		}
+    		return matchtemper; 
+    	};  
+    	
+		/** The system calls this to perform work in the UI thread and delivers
+          * the result from doInBackground() */
+        protected void onPostExecute(Bitmap result) {
+            imgCaptcha.setImageBitmap(result);
         }
     }
     
-	// ‘ункция получения ссылки на картинку капчи
-	public String GetCaptchaPath(String urlsite) 
-	{
-		String matchtemper = "";
-		try
-		{
-			// загрузка страницы
-			URL url = new URL(urlsite);
-			URLConnection conn = url.openConnection();
 
-			// Save Cookie
-			String headerName = null;
-			//_cookies.clear();
-			if (_cookie == "") {
-				for (int i=1; (headerName = conn.getHeaderFieldKey(i))!=null; i++) {
-					if (headerName.equalsIgnoreCase("Set-Cookie")) 
-					{    
-						String cookie = conn.getHeaderField(i);
-						_cookie += cookie.substring(0,cookie.indexOf(";")) + "; ";
-					}
-				}
-			}
-                
-			InputStreamReader rd = new InputStreamReader(conn.getInputStream());
-			StringBuilder allpage = new StringBuilder();
-			int n = 0;
-			char[] buffer = new char[40000];
-			while (n >= 0)
-			{
-				n = rd.read(buffer, 0, buffer.length);
-				if (n > 0)
-				{
-					allpage.append(buffer, 0, n);                    
-				}
-			}
-			// работаем с регулярками
-			final Pattern pattern = Pattern.compile ("/captcha/image/([a-z0-9]+)/");
-			Matcher matcher = pattern.matcher(allpage.toString());
-			if (matcher.find())
-			{    
-				matchtemper = matcher.group(1);            
-			}        
-			return matchtemper;
-		}
-		catch (Exception e)
-		{
-                
-		}
-		return matchtemper; 
-	};  
 	
-	// Функция загрузки изображения из Интернета
-	private Drawable grabImageFromUrl(String url_) throws Exception 
-	{
-		return Drawable.createFromStream((InputStream) new URL(url_).getContent(), "src");
-	}
-	
-	// ѕолучаем токен из куки
+	// Получаем токен из куки
 	public String GetToken(String data)
 	{
 		String matchtoken = "";
@@ -285,10 +323,33 @@ public class MainActivity extends Activity {
 		} 
 		return matchtoken;
 	}
-    
-	// ќтправл€ем SMS       
+ 
+// Класс отправки СМС в отдельном потоке
+    private class SendSMSTask extends AsyncTask<String, Void, String> {
+        /** The system calls this to perform work in a worker thread and
+          * delivers it the parameters given to AsyncTask.execute() 
+          * Как использовать этот класс
+          * public void onClick(View v) {
+	      * 	new SendSMSTask().execute("http://example.com/image.png");
+	      * }*/
+        protected String doInBackground(String... urls) {
+            try {
+            	// Получаем изображение капчи в отдельном потоке
+				return SendPost(urls[0],urls[1]);
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return null;
+        }
+        
+    	// Отправляем SMS       
 		public String SendPost(String httpURL, String data) throws IOException   
 		{
+			//Log.v("Url", httpURL);
+			//Log.v("Data", data);
+			
 			URL url = new URL(httpURL);
 
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -301,6 +362,7 @@ public class MainActivity extends Activity {
 			// If cookie exists, then send cookie
 			if (_cookie != "") 
 			{
+				//Log.v("Cookie", _cookie);
 				connection.setRequestProperty("Cookie", _cookie);
 				connection.connect();
 			}
@@ -308,6 +370,7 @@ public class MainActivity extends Activity {
 			// If Post Data not empty, then send POST Data
 			if (data != "") 
 			{
+				//Log.v("POST", "Data not null");
 				OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
 				out.write(data);
 				out.flush();
@@ -335,12 +398,21 @@ public class MainActivity extends Activity {
 			String decodedString;
 			while ((decodedString = in.readLine()) != null) 
 			{
+				//Log.v("DATA", "read data");
 				getData += decodedString + "\n";
 			}
 			in.close();
 	                
 			return getData;
-		}  
+		}
+
+		/** The system calls this to perform work in the UI thread and delivers
+          * the result from doInBackground() */
+        protected void onPostExecute(String result) {
+            //imgCaptcha.setImageBitmap(result);
+        	txtError.setText(result);
+        }
+    }  
 		
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
