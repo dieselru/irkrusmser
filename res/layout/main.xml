@@ -43,22 +43,11 @@
         android:layout_alignTop="@+id/btnFContacts"
         android:background="@drawable/contactsnormal" />
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/btnContacts"
-        android:layout_marginTop="10dp"
-        android:text="@string/MessageText"
-        android:textColor="@color/textColor"
-        android:textSize="15sp" />
-
     <EditText
         android:id="@+id/editMessage"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
+        android:layout_alignRight="@+id/btnFContacts"
         android:layout_below="@+id/textView2"
         android:ems="10"
         android:inputType="textMultiLine" >
@@ -70,10 +59,20 @@
  	    android:id="@+id/btnSend"
  	    android:layout_width="43dp"
  	    android:layout_height="43dp"
- 	    android:layout_alignBaseline="@+id/editCaptcha1"
- 	    android:layout_alignBottom="@+id/editCaptcha1"
+ 	    android:layout_alignBaseline="@+id/editMessage"
+ 	    android:layout_alignBottom="@+id/editMessage"
  	    android:layout_toRightOf="@+id/btnFContacts"
  	    android:background="@drawable/sendnormal" />
+
+ 	<EditText
+ 	    android:id="@+id/editCaptcha1"
+ 	    android:layout_width="87dp"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_alignRight="@+id/editPhoneNumber"
+ 	    android:layout_alignTop="@+id/imageCaptcha1"
+ 	    android:layout_toRightOf="@+id/imageCaptcha1"
+ 	    android:ems="10"
+ 	    android:inputType="number" />
 
  	<ImageView
  	    android:id="@+id/imageCaptcha1"
@@ -84,15 +83,6 @@
  	    android:scaleType="fitCenter"
  	    android:src="@drawable/ic_launcher" />
 
- 	<EditText
- 	    android:id="@+id/editCaptcha1"
- 	    android:layout_width="87dp"
- 	    android:layout_height="wrap_content"
- 	    android:layout_alignTop="@+id/imageCaptcha1"
- 	    android:layout_toRightOf="@+id/imageCaptcha1"
- 	    android:ems="10"
- 	    android:inputType="number" />
-
  	<TextView
  	    android:id="@+id/textError"
  	    android:layout_width="wrap_content"
@@ -100,5 +90,23 @@
  	    android:layout_alignParentLeft="true"
  	    android:layout_below="@+id/imageCaptcha1"
  	    android:text="TextView" />
+
+ 	<TextView
+ 	    android:id="@+id/textView2"
+ 	    android:layout_width="fill_parent"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_alignParentLeft="true"
+ 	    android:layout_below="@+id/editPhoneNumber"
+ 	    android:text="@string/MessageText"
+ 	    android:textColor="@color/textColor"
+ 	    android:textSize="15sp" />
+
+ 	<ImageView
+ 	    android:id="@+id/imageStatus"
+ 	    android:layout_width="wrap_content"
+ 	    android:layout_height="wrap_content"
+ 	    android:layout_alignTop="@+id/editCaptcha1"
+ 	    android:layout_toRightOf="@+id/editCaptcha1"
+ 	    android:src="@drawable/ic_launcher" />
 
 </RelativeLayout>

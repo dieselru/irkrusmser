@@ -1,11 +1,9 @@
 package com.example.irkrusmser;
 
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -15,21 +13,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -42,24 +46,29 @@ public class MainActivity extends Activity {
 	
 	TextView txtPhoneNumber;
 	TextView txtSMSText;
-	//TextView txtName;
 	TextView txtCaptcha1;
 	TextView txtError;
 	Button buttonSend;
 	Button buttonSelectContact;
-	//Button buttonReload;
 	ImageView imgCaptcha;
 	
     private String _cookie = "";
     private String strCaptcha0 = "";
     private String strMyName = "";
     
+    // Диалоговое окно прогресс бара
+    final int PROGRESS_DLG_ID = 666;
+
+    // Для сохранения настроек
+    SharedPreferences sp;
+    
+    
 	// ќпредел€ем подключены ли к интернету
 	public boolean isOnline() {
 	    ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 	    NetworkInfo nInfo = cm.getActiveNetworkInfo();
 	    if (nInfo != null && nInfo.isConnected()) {
-	        //Log.v("status", "ONLINE");
+	        Log.v("status", "ONLINE");
 	        return true;
 	    }
 	    else {
@@ -86,10 +95,11 @@ public class MainActivity extends Activity {
         
         /*  Загружаем настройки. Если настроек с таким именем нету - 
         возвращаем второй аргумент. В данном случае пробел.  */		
- 
-        SharedPreferences settings = getPreferences(0);
-        strMyName = settings.getString("Name"," ");
- 
+        
+        sp = PreferenceManager.getDefaultSharedPreferences(this);
+        
+        strMyName = sp.getString("Name","");
+        
         /* Вставляем в текстовые поля загруженные параметры */        
         //txtName.setText(name);
         
@@ -101,11 +111,9 @@ public class MainActivity extends Activity {
         else{
         	txtError.setText("Вы не подключены к сети Интернет.");
         }  
-        // Обработчик нажатия на кнопку ртправить
+        // Обработчик нажатия на кнопку отправить
         buttonSend.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-        		//Toast.makeText(getApplicationContext(), "ѕривет, мир!", Toast.LENGTH_SHORT).show();
-        		// ѕо нажатию на кнопку button1 происходит отображение всплываещего сообщени€ "ѕривет, мир!"
         		if (txtPhoneNumber.length() < 1)
         		{
         			Toast.makeText(getApplicationContext(), "Введите номер телефона!", Toast.LENGTH_SHORT).show();
@@ -126,18 +134,11 @@ public class MainActivity extends Activity {
         		
         		if (isOnline() == true){
 	        		String data_s = "csrfmiddlewaretoken=" + GetToken(_cookie) + "&number=" + txtPhoneNumber.getText() + "&message=" + txtSMSText.getText() + "\n" + strMyName + "&captcha_0=" + strCaptcha0 + "&captcha_1=" + txtCaptcha1.getText();
-	        		//try 
-	        		//{
-	        			//txtError.setText(SendPost("http://irk.ru/sms/?", data_s));
 	        			new SendSMSTask().execute("http://irk.ru/sms/?", data_s);
 	        			//Log.v("status", "SEND");
-	        		//} 
-	        		//catch (IOException e) 
-	        		//{
-	        		//	e.printStackTrace();
-	        		//}
 	        		// Получаем капчу
 	        		new DownloadImageTask().execute("http://irk.ru/sms");
+	        		
         		}
         		else{
         			Toast.makeText(getApplicationContext(), "Вы не подключены к сети Интернет.", Toast.LENGTH_SHORT).show();
@@ -148,8 +149,6 @@ public class MainActivity extends Activity {
         // ќбработчик нажати€ на капчу (обновление капчи)
         imgCaptcha.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-        		//Toast.makeText(getApplicationContext(), "ѕривет, мир!", Toast.LENGTH_SHORT).show();
-        		// ѕо нажатию на кнопку button1 происходит отображение всплываещего сообщени€ "ѕривет, мир!"
         		if (isOnline() == true){
 	        		// Получаем капчу
         			new DownloadImageTask().execute("http://irk.ru/sms");
@@ -180,12 +179,12 @@ public class MainActivity extends Activity {
  
       /* Загружаем редактор настроек и вписываем новые значения */
  
-      SharedPreferences settings = getPreferences(0);
-      SharedPreferences.Editor editor = settings.edit();
-      editor.putString("Name", strMyName);
+      //SharedPreferences settings = getPreferences(0);
+      //SharedPreferences.Editor editor = settings.edit();
+      //editor.putString("Name", strMyName);
  
       /* Сохраняем данные. Если не выполнить - ничего не сохранится =) */
-      editor.commit();
+      //editor.commit();
     }
 
     // Обработка выбора контакта
@@ -221,6 +220,7 @@ public class MainActivity extends Activity {
     	txtPhoneNumber.setText(number);      
     }
     
+
 // Класс загрузки изображения капчи в отдельном потоке
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         /** The system calls this to perform work in a worker thread and
@@ -300,11 +300,18 @@ public class MainActivity extends Activity {
     		}
     		return matchtemper; 
     	};  
-    	
-		/** The system calls this to perform work in the UI thread and delivers
-          * the result from doInBackground() */
+    	/*
+		@Override
+        protected void onProgressUpdate(Void... values) {
+             super.onProgressUpdate(values);
+             // Показать диалог
+             showDialog(PROGRESS_DLG_ID);
+        }
+		*/
         protected void onPostExecute(Bitmap result) {
             imgCaptcha.setImageBitmap(result);
+         // Уничтожить окно диалого
+        	//dismissDialog(PROGRESS_DLG_ID);
         }
     }
     
@@ -332,6 +339,7 @@ public class MainActivity extends Activity {
           * public void onClick(View v) {
 	      * 	new SendSMSTask().execute("http://example.com/image.png");
 	      * }*/
+
         protected String doInBackground(String... urls) {
             try {
             	// Получаем изображение капчи в отдельном потоке
@@ -406,17 +414,47 @@ public class MainActivity extends Activity {
 			return getData;
 		}
 
-		/** The system calls this to perform work in the UI thread and delivers
-          * the result from doInBackground() */
+		@Override
+        protected void onProgressUpdate(Void... values) {
+             super.onProgressUpdate(values);
+             // Показать диалог
+             //showDialog(PROGRESS_DLG_ID);
+        }
+
+		// Обработка результата работы нового потока и взаимодействие с элементами основного потока
         protected void onPostExecute(String result) {
-            //imgCaptcha.setImageBitmap(result);
-        	txtError.setText(result);
+        	// Уничтожить окно диалого
+        	//dismissDialog(PROGRESS_DLG_ID);
+    		txtError.setText(result);
         }
     }  
-		
+    
+    @Override
+    protected Dialog onCreateDialog(int dialogId){
+        ProgressDialog progress = null;
+        switch (dialogId) {
+        case PROGRESS_DLG_ID:
+            progress = new ProgressDialog(this);
+                progress.setMessage("Отправка...");
+            
+            break;
+        }
+        return progress;
+    }
+
+    protected void onResume() {
+        strMyName = sp.getString("Name", "");
+        super.onResume();
+      }
+    
+	// Создание меню	
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+        //getMenuInflater().inflate(R.menu.main, menu);
+        //menu.add("menu1");
+        //return true;
+	      MenuItem mi = menu.add(0, 1, 0, "Настройки");
+	      mi.setIntent(new Intent(this, PrefActivity.class));
+	      return super.onCreateOptionsMenu(menu);
     }
 }
