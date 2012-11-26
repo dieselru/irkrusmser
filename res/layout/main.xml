@@ -107,6 +107,7 @@
  	    android:layout_height="wrap_content"
  	    android:layout_alignTop="@+id/editCaptcha1"
  	    android:layout_toRightOf="@+id/editCaptcha1"
- 	    android:src="@drawable/ic_launcher" />
+ 	    android:src="@drawable/success"
+ 	    android:visibility="invisible" />
 
 </RelativeLayout>

@@ -12,6 +12,10 @@ import java.net.URLConnection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
+import org.htmlcleaner.XPatherException;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -27,6 +31,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.opengl.Visibility;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -51,6 +56,7 @@ public class MainActivity extends Activity {
 	Button buttonSend;
 	Button buttonSelectContact;
 	ImageView imgCaptcha;
+	ImageView imgStatus;
 	
     private String _cookie = "";
     private String strCaptcha0 = "";
@@ -58,7 +64,10 @@ public class MainActivity extends Activity {
     
     // Диалоговое окно прогресс бара
     final int PROGRESS_DLG_ID = 666;
-
+  //Диалог ожидания
+    private ProgressDialog pd;
+    private ProgressDialog pdSMS;
+    
     // Для сохранения настроек
     SharedPreferences sp;
     
@@ -68,7 +77,7 @@ public class MainActivity extends Activity {
 	    ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 	    NetworkInfo nInfo = cm.getActiveNetworkInfo();
 	    if (nInfo != null && nInfo.isConnected()) {
-	        Log.v("status", "ONLINE");
+	        //Log.v("status", "ONLINE");
 	        return true;
 	    }
 	    else {
@@ -92,6 +101,7 @@ public class MainActivity extends Activity {
         buttonSend = (Button) findViewById(R.id.btnSend);
         buttonSelectContact = (Button) findViewById(R.id.btnContacts);
         imgCaptcha = (ImageView) findViewById(R.id.imageCaptcha1);
+        imgStatus = (ImageView) findViewById(R.id.imageStatus);
         
         /*  Загружаем настройки. Если настроек с таким именем нету - 
         возвращаем второй аргумент. В данном случае пробел.  */		
@@ -105,6 +115,7 @@ public class MainActivity extends Activity {
         
         // ѕроверка на подключение к »нтернет
         if (isOnline() == true){
+        	pd = ProgressDialog.show(MainActivity.this, "Подождите...", "Получение капчи", true, false);
         	// Получаем капчу
         	new DownloadImageTask().execute("http://irk.ru/sms");
         }
@@ -134,8 +145,11 @@ public class MainActivity extends Activity {
         		
         		if (isOnline() == true){
 	        		String data_s = "csrfmiddlewaretoken=" + GetToken(_cookie) + "&number=" + txtPhoneNumber.getText() + "&message=" + txtSMSText.getText() + "\n" + strMyName + "&captcha_0=" + strCaptcha0 + "&captcha_1=" + txtCaptcha1.getText();
-	        			new SendSMSTask().execute("http://irk.ru/sms/?", data_s);
+	        		imgStatus.setVisibility(View.INVISIBLE);
+	        		pdSMS = ProgressDialog.show(MainActivity.this, "Подождите...", "Отправка СМС", true, false);
+	        		new SendSMSTask().execute("http://irk.ru/sms/?", data_s);
 	        			//Log.v("status", "SEND");
+	        		pd = ProgressDialog.show(MainActivity.this, "Подождите...", "Получение капчи", true, false);
 	        		// Получаем капчу
 	        		new DownloadImageTask().execute("http://irk.ru/sms");
 	        		
@@ -150,6 +164,7 @@ public class MainActivity extends Activity {
         imgCaptcha.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
         		if (isOnline() == true){
+        			pd = ProgressDialog.show(MainActivity.this, "Подождите...", "Получение капчи", true, false);
 	        		// Получаем капчу
         			new DownloadImageTask().execute("http://irk.ru/sms");
         		}
@@ -309,6 +324,7 @@ public class MainActivity extends Activity {
         }
 		*/
         protected void onPostExecute(Bitmap result) {
+        	pd.dismiss();
             imgCaptcha.setImageBitmap(result);
          // Уничтожить окно диалого
         	//dismissDialog(PROGRESS_DLG_ID);
@@ -322,12 +338,14 @@ public class MainActivity extends Activity {
 	{
 		String matchtoken = "";
 		// работаем с регулярками
+		//Log.v("coocies",data);
 		final Pattern pattern = Pattern.compile ("csrftoken=([a-zA-Z0-9]+);");
 		Matcher matcher = pattern.matcher(data);
 		if (matcher.find())
 		{    
 			matchtoken = matcher.group(1);            
 		} 
+		//Log.v("coocies_t",matchtoken);
 		return matchtoken;
 	}
  
@@ -410,37 +428,35 @@ public class MainActivity extends Activity {
 				getData += decodedString + "\n";
 			}
 			in.close();
-	                
+			
 			return getData;
 		}
 
 		@Override
         protected void onProgressUpdate(Void... values) {
              super.onProgressUpdate(values);
-             // Показать диалог
-             //showDialog(PROGRESS_DLG_ID);
+
         }
 
 		// Обработка результата работы нового потока и взаимодействие с элементами основного потока
         protected void onPostExecute(String result) {
         	// Уничтожить окно диалого
-        	//dismissDialog(PROGRESS_DLG_ID);
-    		txtError.setText(result);
+        	pdSMS.dismiss();
+        	
+    		String matchtoken = "";
+    		// работаем с регулярками
+    		final Pattern pattern = Pattern.compile ("(succes[a-z]+)");
+    		Matcher matcher = pattern.matcher(result);
+    		if (matcher.find())
+    		{    
+    			matchtoken = matcher.group(1); 
+    			imgStatus.setVisibility(View.VISIBLE);
+    			//Log.v("matcher", matchtoken);
+    		} 
+    		
+    		txtError.setText(matchtoken);
         }
     }  
-    
-    @Override
-    protected Dialog onCreateDialog(int dialogId){
-        ProgressDialog progress = null;
-        switch (dialogId) {
-        case PROGRESS_DLG_ID:
-            progress = new ProgressDialog(this);
-                progress.setMessage("Отправка...");
-            
-            break;
-        }
-        return progress;
-    }
 
     protected void onResume() {
         strMyName = sp.getString("Name", "");
